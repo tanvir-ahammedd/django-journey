@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
-from .forms import RegisterForm
+from .forms import RegisterForm, CustomPasswordChangeForm, CustomSetPasswordForm, ChangeUserData
 from django.contrib import messages
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, SetPasswordForm
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 
 # Create your views here.
 def home(request):
@@ -43,10 +43,43 @@ def loginuser(request):
     
 def profile(request):
     if request.user.is_authenticated:
-        return render(request, 'profile.html', {'user': request.user})
+        if request.method == 'POST':
+            form = ChangeUserData(request.POST, instance=request.user)
+            if form.is_valid():
+                messages.success(request, 'Account Updated Successfully')
+                form.save()
+                print(form.cleaned_data)
+        else:
+            form = ChangeUserData(instance=request.user)
+        return render(request, 'profile.html', {'form': form})
     else:
-        return redirect('login_page')
+        return redirect('signup')
 
 def user_logout(request):
     logout(request)
     return redirect('login_page')
+
+def changePass(request):
+    if request.method == 'POST':
+        form = CustomPasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            return redirect('profile_page')
+    else:
+        form = CustomPasswordChangeForm(user=request.user)       
+    return render(request, 'passchange.html', {'form': form})
+
+def changePass2(request):
+    if request.method == 'POST':
+        form = CustomSetPasswordForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            return redirect('profile_page')
+    else:
+        form = CustomSetPasswordForm(user=request.user)       
+    return render(request, 'passchange.html', {'form': form})
+
+
+    
